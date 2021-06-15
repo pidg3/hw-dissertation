@@ -10,4 +10,5 @@ Folders are currently organised as follows:
 - `marabou-testing`: sandbox for experimenting with Marabou and building an understanding of the software. 
 - `tensorflow-practice`: sandbox for running through TensorFlow tutorials/courses
 - `yel-etal`: copied code from - https://github.com/chihkuanyeh/saliency_evaluation
+- `slack-etal`: copied code from - https://github.com/dylan-slack/Fooling-LIME-SHAP
 
