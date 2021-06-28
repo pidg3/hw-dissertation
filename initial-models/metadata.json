@@ -147,7 +147,7 @@
   {
     "name":"duration",
     "type":"numerical",
-    "used":true,
+    "used":false,
     "min":0
   },
   {
