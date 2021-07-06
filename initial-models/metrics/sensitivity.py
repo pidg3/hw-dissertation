@@ -139,17 +139,17 @@ def calculate_perturbation_nominal(instance, feature_metadata, explainer, origin
 # More sophisticated implementation of sensitivity
 
 
-def calculate_sensitivity(explainer, instance_index, original_explanation, metadata_local, df_local, numeric_displacement=0.1, proportion_features_perturbed=0.1):
+def calculate_sensitivity(explainer, instance_index, original_explanation, metadata, dataframe, numeric_displacement=0.1, proportion_features_perturbed=0.1):
 
     # Filter our features not used
     used_features = list(filter(
-        (lambda feat: feat['type'] != 'outcome' and feat['used'] == True), metadata_local))
+        (lambda feat: feat['type'] != 'outcome' and feat['used'] == True), metadata))
 
     # Calculate how many features to perturb
     n = math.ceil(len(used_features) * proportion_features_perturbed)
 
     # Make a copy of the instance
-    instance_copy = df_local.iloc[instance_index, :].copy(deep=True)
+    instance_copy = dataframe.iloc[instance_index, :].copy(deep=True)
 
     # Loop through the number of features
     for iteration in range(n):
