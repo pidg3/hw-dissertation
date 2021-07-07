@@ -1,9 +1,18 @@
 import copy
 import numpy as np
+from model.dataset_converter import convert_numpy_tensor
+from model.metadata import get_feature_names
 
 print('Fidelity module imported')
 
 def calculate_fidelity(explanation, model, dataframe, metadata, instance_index, num_perturbed_features=2, nominal_perturbation_constant=1):
+
+    feature_names = get_feature_names(metadata)
+
+    # Simple model output predictor
+    def model_output(instance):
+      input_tensor = convert_numpy_tensor(instance, feature_names)
+      return model.predict(input_tensor)
 
     # Make copies of the instance and metadata
     instance_original = dataframe.iloc[instance_index, :].copy(deep=True)
@@ -20,7 +29,7 @@ def calculate_fidelity(explanation, model, dataframe, metadata, instance_index, 
                 instance_nominal_ranking[feature['index']] = possible_value
                 outputs.append({
                     'value': possible_value,
-                    'output': model([instance_nominal_ranking.to_numpy()])
+                    'output': model_output([instance_nominal_ranking.to_numpy()])
                 })
             sorted_outputs = sorted(outputs, key=(lambda feat: feat['output']))
             feature['values'] = list(
@@ -79,6 +88,7 @@ def calculate_fidelity(explanation, model, dataframe, metadata, instance_index, 
         perturbations.append(perturbation)
 
     # Apply the formula to calculate infidelity
-    infidelity = np.dot(perturbations, explanation[0]) - ((model(
-        [instance_original_np])[0] - model([instance_perturbed_np])[0]) ** 2)
-    return 1 / infidelity[0]
+    infidelity = np.dot(perturbations, explanation[0]) - ((model_output(
+        [instance_original_np]) - model_output([instance_perturbed_np]) ** 2))
+    fidelity = 1 / infidelity[0]
+    return fidelity[0]

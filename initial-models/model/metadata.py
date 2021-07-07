@@ -2,7 +2,10 @@ import copy
 
 print('metadata module imported')
 
-def get_feat_names_of_type(type, metadata):
+def get_feature_names(metadata):
+    return list(map((lambda feat: feat['name']), metadata))
+
+def get_feature_names_of_type(type, metadata):
     features = list(filter(
         (lambda feat: feat['type'] == type and feat['used'] == True), metadata))
     names = list(map((lambda feat: feat['name']), features))
