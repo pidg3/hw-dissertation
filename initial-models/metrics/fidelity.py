@@ -5,14 +5,13 @@ from model.metadata import get_feature_names
 
 print('Fidelity module imported')
 
-
-def calculate_fidelity_temp(explanation, model, instance, metadata, num_baselined_features=2):
+def calculate_fidelity(explanation, model, instance, metadata, num_baselined_features=2):
     """
     calculate_fidelity calculates a single numeric value for an explanation's fidelity with respect to some model
 
     :param explanation: an array of numbers representing feature importances TODO: should just be 1D array
     :param model: a model that provides a predict() function to generate an output prediction
-    :param instance: an array of number representing the input instance
+    :param instance: an array of numbers representing the input instance
     :param metadata: metadata dictionary in standard format
     :param num_baselined_features: how many features to set to their baseline value before measuring model output
     :param
