@@ -1,6 +1,6 @@
 import copy
 
-print('metadata module imported')
+print('Metadata module imported')
 
 def get_feature_names(metadata):
     return list(map((lambda feat: feat['name']), metadata))

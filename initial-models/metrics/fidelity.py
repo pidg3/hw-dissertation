@@ -5,31 +5,37 @@ from model.metadata import get_feature_names
 
 print('Fidelity module imported')
 
-def calculate_fidelity(explanation, model, dataframe, metadata, instance_index, num_perturbed_features=2, nominal_perturbation_constant=1):
+
+def calculate_fidelity_temp(explanation, model, instance, metadata, num_baselined_features=2):
+    print(model)
+    """
+    calculate_fidelity calculates a single numeric value for an explanation's fidelity with respect to some model
+
+    :param explanation: an array of numbers representing feature importances TODO: should just be 1D array
+    :param model: a model that provides a predict() function to generate an output prediction
+    :param instance: an array of number representing the input instance
+    :param metadata: metadata dictionary in standard format
+    :param num_baselined_features: how many features to set to their baseline value before measuring model output
+    :param
+    """
 
     feature_names = get_feature_names(metadata)
 
-    # Simple model output predictor
-    def model_output(instance):
-      input_tensor = convert_numpy_tensor(instance, feature_names)
-      return model.predict(input_tensor)
-
     # Make copies of the instance and metadata
-    instance_original = dataframe.iloc[instance_index, :].copy(deep=True)
-    instance_perturbed = dataframe.iloc[instance_index, :].copy(deep=True)
+    instance_original = instance.copy()
+    instance_perturbed = instance.copy()
     metadata_copy = copy.deepcopy(metadata)
 
     # Work out an ordering for nominal values
     for feature in metadata_copy:
         if feature['type'] == 'nominal':
             outputs = []
-            instance_nominal_ranking = dataframe.iloc[instance_index, :].copy(
-                deep=True)
+            instance_nominal_ranking = instance.copy()
             for possible_value in feature['values']:
                 instance_nominal_ranking[feature['index']] = possible_value
                 outputs.append({
                     'value': possible_value,
-                    'output': model_output([instance_nominal_ranking.to_numpy()])
+                    'output': model.predict(instance_nominal_ranking)
                 })
             sorted_outputs = sorted(outputs, key=(lambda feat: feat['output']))
             feature['values'] = list(
@@ -40,7 +46,7 @@ def calculate_fidelity(explanation, model, dataframe, metadata, instance_index, 
     # Get our top n feature names
     explanation_with_indexes = []
     index = 0
-    for feat in explanation[0]:
+    for feat in explanation:
         explanation_with_indexes.append({
             'index': index,
             'value': feat
@@ -49,11 +55,11 @@ def calculate_fidelity(explanation, model, dataframe, metadata, instance_index, 
 
     sorted_explanations = sorted(
         explanation_with_indexes, key=(lambda feat: -abs(feat['value'])))
-    top_explanations = sorted_explanations[0:num_perturbed_features]
+    top_explanations = sorted_explanations[0:num_baselined_features]
 
     # Make a copy of the instance
-    instance_original = dataframe.iloc[instance_index, :].copy(deep=True)
-    instance_perturbed = dataframe.iloc[instance_index, :].copy(deep=True)
+    instance_original = instance.copy()
+    instance_perturbed = instance.copy()
 
     # Reassign these features to their baseline values
     for feat in top_explanations:
@@ -61,12 +67,9 @@ def calculate_fidelity(explanation, model, dataframe, metadata, instance_index, 
         instance_perturbed[idx] = metadata_copy[idx]['baseline']
 
     # Calculate the resulting perturbation
-    instance_original_np = instance_original.to_numpy()
-    instance_perturbed_np = instance_perturbed.to_numpy()
-
     perturbations = []
 
-    for index, (original_value, perturbed_value) in enumerate(zip(instance_original_np, instance_perturbed_np)):
+    for index, (original_value, perturbed_value) in enumerate(zip(instance_original, instance_perturbed)):
         # Work out type and set default value
         feat_type = metadata_copy[index]['type']
         perturbation = 0
@@ -88,7 +91,7 @@ def calculate_fidelity(explanation, model, dataframe, metadata, instance_index, 
         perturbations.append(perturbation)
 
     # Apply the formula to calculate infidelity
-    infidelity = np.dot(perturbations, explanation[0]) - ((model_output(
-        [instance_original_np]) - model_output([instance_perturbed_np]) ** 2))
+    infidelity = np.dot(perturbations, explanation) - ((model.predict(
+        instance_original) - model.predict(instance_perturbed) ** 2))
     fidelity = 1 / infidelity[0]
     return fidelity[0]
