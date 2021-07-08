@@ -7,7 +7,6 @@ print('Fidelity module imported')
 
 
 def calculate_fidelity_temp(explanation, model, instance, metadata, num_baselined_features=2):
-    print(model)
     """
     calculate_fidelity calculates a single numeric value for an explanation's fidelity with respect to some model
 
