@@ -6,18 +6,13 @@ print('Sensitivity module imported')
 
 def generate_perturbation(value, feature_metadata, direction, numeric_displacement=0.1):
 
-    # We use this to ensure zero values are perturbed
-    ADDITIONAL_VALUE = 0.0001
-
-    # If increasing - round up
+    # If increasing
     if (direction == 'up'):
-        new_value = value * (1 + numeric_displacement) + ADDITIONAL_VALUE
-        new_value = math.ceil(new_value)
+        new_value = value + numeric_displacement * feature_metadata['baseline']
 
-    # If decreasing - round down
+    # If decreasing
     else:
-        new_value = value * (1 - numeric_displacement) - ADDITIONAL_VALUE
-        new_value = math.floor(new_value)
+        new_value = value - numeric_displacement * feature_metadata['baseline']
 
     # Check no higher/lower than max/min values
     if ('max' in feature_metadata):
