@@ -95,8 +95,9 @@ def calculate_infidelity(explanation, model, instance, metadata, num_baselined_f
             perturbations.append(perturbation)
 
         # Apply the formula to calculate infidelity
-        infidelity = np.dot(perturbations, abs_explanation) / ((model.predict(
-            instance_original) - model.predict(instance_perturbed) ** 2))
+        # TODO: need to handle the divide by zero problem in the event of no change to model output
+        infidelity = np.dot(perturbations, explanation) / ((model.predict(
+            instance_original) - model.predict(instance_perturbed)) ** 2)
 
         cumulative_infidelity += infidelity
     return cumulative_infidelity
