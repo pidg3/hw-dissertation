@@ -180,11 +180,6 @@
     "used":true
   },
   {
-    "name":"noise",
-    "type":"numerical",
-    "used":false
-  },
-  {
     "name":"y_binary",
     "type":"outcome"
   }
