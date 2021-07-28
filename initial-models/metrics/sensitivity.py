@@ -153,7 +153,7 @@ def calculate_sensitivity(explainer, original_explanation, instance, metadata, n
 
     # Calculate how many features to perturb
     n = math.ceil(len(used_features) * proportion_features_perturbed)
-    print(f'Perturbing  {n} features')
+    print(f'Perturbing {n} features')
     # Make a copy of the instance
     instance_copy = instance.copy()
 
