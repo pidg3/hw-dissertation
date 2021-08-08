@@ -1,6 +1,6 @@
 import numpy as np
 import pytest
-from infidelity import calculate_infidelity
+from infidelity import calculate_infidelity, _order_nominal_values, _get_top_explanation_values, _calculate_perturbations
 
 class MockModel():
     def predict(self, instance):
@@ -27,7 +27,8 @@ mock_metadata = [
 ]
 
 def test_happy_path():
-    calculate_infidelity(mock_explanation, mock_model, mock_instance, mock_metadata)
+    result = calculate_infidelity(mock_explanation, mock_model, mock_instance, mock_metadata)
+    assert result == 0.25
 
 # =========== Incorrect inputs ===========
 
@@ -98,3 +99,84 @@ def test_bad_inconsistent_num_features():
     with pytest.raises(ValueError) as exception:
         calculate_infidelity(mock_explanation, mock_model, mock_instance, metadata_one_feature)
     assert str(exception.value) == 'Explanation, instance and metadata (used features) must be equal lengths'
+
+# =========== Helper methods ===========
+
+def test_order_nominal_values(): 
+    mock_metadata = [{
+        'name': 'x1',
+        'type': 'nominal',
+        'used': True,
+        'index': 0,
+        'values': ['bananas', 'apples', 'pears'],
+        'baseline': 'pears'
+    }]
+    mock_instance = ['peaches']
+    class MockModel():
+        def predict(self, instance):
+            if instance == ['apples']:
+                return -1
+            if instance == ['bananas']:
+                return 0
+            if instance == ['pears']:
+                return 1
+    result = _order_nominal_values(mock_metadata, mock_instance, MockModel())
+    expected_result = [{
+        'name': 'x1',
+        'type': 'nominal',
+        'used': True,
+        'index': 0,
+        'values': ['apples', 'bananas', 'pears'], # Updated
+        'baseline': 'bananas' # Updated
+
+    }]
+    assert result == expected_result
+
+def test_get_top_explanation_values(): 
+    mock_explanation = [-1, -5, 4, 0, 1, 3, 10]
+    assert _get_top_explanation_values(mock_explanation, 2) == [
+        {
+            'index': 6,
+            'value': 10
+        },
+        {
+            'index': 1,
+            'value': -5
+        }
+    ]
+
+# Metadata has already been converted to 'ordered nominal' format at this point
+def test_calculate_perturbation_numerical():
+    instance_original = [5]
+    instance_perturned = [10]
+    mock_metadata = [
+        {
+            'name': 'x1',
+            'type': 'numerical',
+            'used': True,
+            'index': 0,
+            'baseline': 2
+        }
+    ]
+    result = _calculate_perturbations(instance_original, instance_perturned, mock_metadata)
+    # difference / baseline
+    assert result == [2.5]
+
+def test_calculate_perturbation_categorical():
+    instance_original = ['apples']
+    instance_perturned = ['bananas']
+    mock_metadata = [{
+        'name': 'x1',
+        'type': 'nominal',
+        'used': True,
+        'index': 0,
+        'values': ['apples', 'bananas', 'pears', 'kiwis', 'grapes', 'pineapples', 'melons'],
+        'baseline': 'kiwis'
+
+    }]
+    result = _calculate_perturbations(instance_original, instance_perturned, mock_metadata)
+    # original_index = 0
+    # perturbed_index = 1
+    # differernce = -1
+    # abs(-1 / 6)
+    assert result == [1 / 7]
