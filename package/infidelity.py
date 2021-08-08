@@ -1,10 +1,21 @@
 import copy
 import numpy as np
 from random import uniform
-from model.dataset_converter import convert_numpy_tensor
-from model.metadata import get_feature_names
+from helpers.dataset_converter import convert_numpy_tensor
+from helpers.metadata import get_feature_names
 
-print('Infidelity module imported')
+def is_array_like(input):
+    if isinstance(input,(list,np.ndarray)):
+        return True
+    return False
+
+def predict_returns_correct_format(instance, model):
+    if not (hasattr(model, 'predict') and callable(model.predict)):
+        raise ValueError('Model does not have predict() method')
+    try:
+        result = model.predict(instance)
+    except:
+        raise ValueError('Model predict() method cannot handle instance')
 
 
 def calculate_infidelity(explanation, model, instance, metadata, num_baselined_features=2):
@@ -19,6 +30,30 @@ def calculate_infidelity(explanation, model, instance, metadata, num_baselined_f
     :param metadata: metadata dictionary in standard format
     :param num_baselined_features: how many features to set to their baseline value before measuring model output
     """
+
+    # Check inputs array-like
+    if not (is_array_like(explanation) and is_array_like(instance)):
+        raise ValueError('Explanation and instance should be a list or np array')
+
+    # Check consistent array lengths
+    metadata_used_only = [feat for feat in metadata if feat['used'] == True]
+    if len(explanation) != len(instance) or len(explanation) != len(metadata_used_only):
+        raise ValueError('Explanation, instance and metadata (used features) must be equal lengths')
+
+    # Check model has predict method, and can handle instance withour erroring
+    predict_returns_correct_format(instance, model)
+
+    # Check metadata has all required fields
+    for feat in metadata:
+        if feat['used'] == True:
+            if 'index' not in feat:
+                raise ValueError('Bad metadata - indexes not defined')
+            if 'name' not in feat:
+                raise ValueError('Bad metadata - names not defined')
+            if 'type' not in feat:
+                raise ValueError('Bad metadata - types not defined')
+            if 'baseline' not in feat:
+                raise ValueError('Bad metadata - baselines not defined')
 
     feature_names = get_feature_names(metadata)
     metadata_copy = copy.deepcopy(metadata)

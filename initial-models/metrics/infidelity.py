@@ -6,18 +6,18 @@ from model.metadata import get_feature_names
 
 print('Infidelity module imported')
 
-
 def calculate_infidelity(explanation, model, instance, metadata, num_baselined_features=2):
     """
     calculate_infidelity calculates a single numeric value for an explanation's infidelity with respect to some model
     
     Values are bounded from zero (huge change in model output) to +inf (zero change in model output)
 
-    :param explanation: an array of numbers representing feature importances
+    :param explanation: an array of numbers representing feature importances TODO: should just be 1D array
     :param model: a model that provides a predict() function to generate an output prediction
     :param instance: an array of numbers representing the input instance
     :param metadata: metadata dictionary in standard format
     :param num_baselined_features: how many features to set to their baseline value before measuring model output
+    :param
     """
 
     feature_names = get_feature_names(metadata)
