@@ -3,8 +3,20 @@ import numpy as np
 
 print('Sensitivity module imported')
 
+def _is_array_like(input):
+    if isinstance(input,(list,np.ndarray)):
+        return True
+    return False
 
-def generate_perturbation(value, feature_metadata, direction, numeric_displacement=0.1):
+def _explainer_returns_correct_format(explainer, instance):
+    if not callable(explainer):
+        raise ValueError('Explainer not callable')
+    try:
+        result = explainer(instance)
+    except:
+        raise ValueError('Explainer function cannot handle instance')
+
+def _generate_perturbation(value, feature_metadata, direction, numeric_displacement=0.1):
 
     # If increasing
     if (direction == 'up'):
@@ -22,7 +34,7 @@ def generate_perturbation(value, feature_metadata, direction, numeric_displaceme
     return new_value
 
 
-def calculate_perturbation_numerical(instance, feature_metadata, explainer, original_explanation, numeric_displacement=0.1):
+def _calculate_perturbation_numerical(instance, feature_metadata, explainer, original_explanation, numeric_displacement=0.1):
 
     feature_index = feature_metadata['index']
 
@@ -30,7 +42,7 @@ def calculate_perturbation_numerical(instance, feature_metadata, explainer, orig
     new_value = instance[feature_index]
 
     positive_copy = instance.copy()
-    positive_perturbed_value = generate_perturbation(
+    positive_perturbed_value = _generate_perturbation(
         positive_copy[feature_index], feature_metadata, 'up')
     positive_copy[feature_index] = positive_perturbed_value
     positive_explanation = explainer(positive_copy)
@@ -38,7 +50,7 @@ def calculate_perturbation_numerical(instance, feature_metadata, explainer, orig
         np.array(positive_explanation) - np.array(original_explanation))
 
     negative_copy = instance.copy()
-    negative_perturbed_value = generate_perturbation(
+    negative_perturbed_value = _generate_perturbation(
         negative_copy[feature_index], feature_metadata, 'down')
     negative_copy[feature_index] = negative_perturbed_value
     negative_explanation = explainer(negative_copy)
@@ -56,7 +68,7 @@ def calculate_perturbation_numerical(instance, feature_metadata, explainer, orig
     return max_explanation_difference, new_value
 
 
-def calculate_perturbation_ordinal(instance, feature_metadata, explainer, original_explanation):
+def _calculate_perturbation_ordinal(instance, feature_metadata, explainer, original_explanation):
 
     feature_index = feature_metadata['index']
     value = instance[feature_index]
@@ -104,7 +116,7 @@ def calculate_perturbation_ordinal(instance, feature_metadata, explainer, origin
     return max_explanation_difference, new_value
 
 
-def calculate_perturbation_nominal(instance, feature_metadata, explainer, original_explanation):
+def _calculate_perturbation_nominal(instance, feature_metadata, explainer, original_explanation):
 
     feature_index = feature_metadata['index']
     value = instance[feature_index]
@@ -138,7 +150,8 @@ def calculate_perturbation_nominal(instance, feature_metadata, explainer, origin
 def calculate_sensitivity(
     explainer,
     original_explanation,
-    instance, metadata,
+    instance,
+    metadata,
     numeric_displacement=0.1,
     proportion_features_perturbed=0.1,
     skip_zero_saliency_features=False):
@@ -154,6 +167,25 @@ def calculate_sensitivity(
     :param skip_zero_saliency_features: whether to skip perturbing features with zero saliency value (i.e. we assume
       not important to the calculation)
     """
+
+    # Check inputs array-like
+    if not (_is_array_like(original_explanation) and _is_array_like(instance)):
+        raise ValueError('original_explanation and instance should be a list or np array')
+    
+    # Check explainer is callable, and can handle instance withour erroring
+    _explainer_returns_correct_format(explainer, instance)
+
+    # Check metadata has all required fields
+    for feat in metadata:
+        if feat['used'] == True:
+            if 'index' not in feat:
+                raise ValueError('Bad metadata - indexes not defined')
+            if 'name' not in feat:
+                raise ValueError('Bad metadata - names not defined')
+            if 'type' not in feat:
+                raise ValueError('Bad metadata - types not defined')
+            if 'baseline' not in feat:
+                raise ValueError('Bad metadata - baselines not defined')
 
     # Filter our features not used
     used_features = list(filter(
@@ -177,15 +209,15 @@ def calculate_sensitivity(
             if skip_zero_saliency_features == False or instance_copy[feature['index']] != 0:
                 # Apply the perturbations, varying the technique depending on the data type
                 if feature['type'] == 'numerical':
-                    perturbation_difference, perturbation_value = calculate_perturbation_numerical(
+                    perturbation_difference, perturbation_value = _calculate_perturbation_numerical(
                         instance_copy, feature, explainer, original_explanation)
 
                 elif feature['type'] == 'ordinal':
-                    perturbation_difference, perturbation_value = calculate_perturbation_ordinal(
+                    perturbation_difference, perturbation_value = _calculate_perturbation_ordinal(
                         instance_copy, feature, explainer, original_explanation)
 
                 elif feature['type'] == 'nominal':
-                    perturbation_difference, perturbation_value = calculate_perturbation_nominal(
+                    perturbation_difference, perturbation_value = _calculate_perturbation_nominal(
                         instance_copy, feature, explainer, original_explanation)
 
                 else:
