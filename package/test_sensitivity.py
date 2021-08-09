@@ -12,14 +12,18 @@ mock_metadata = [
         'type': 'numerical',
         'used': True,
         'index': 0,
-        'baseline': 1
+        'baseline': 1,
+        'max': 5,
+        'min': -5
     },
     {
         'name': 'x2',
         'type': 'numerical',
         'used': True,
         'index': 1,
-        'baseline': 1
+        'baseline': 1,
+        'max': 5,
+        'min': -5
     }
 ]
 
@@ -73,3 +77,23 @@ def test_bad_metadata():
     with pytest.raises(ValueError) as exception:
         calculate_sensitivity(mock_explainer, mock_explanation, mock_instance, bad_metadata)
     assert str(exception.value) == 'Bad metadata - indexes not defined'
+
+# =========== Helper methods ===========
+
+def test_generate_perturbation():
+    increased_value = _generate_perturbation(3, mock_metadata[0], 'up', numeric_displacement=0.1)
+    assert increased_value == 3.1
+    decreased_value = _generate_perturbation(3, mock_metadata[0], 'down', numeric_displacement=0.1)
+    assert decreased_value == 2.9
+
+def test_generate_perturbation_at_boundaries():
+    increased_value = _generate_perturbation(3, mock_metadata[0], 'up', numeric_displacement=100)
+    assert increased_value == 5
+    decreased_value = _generate_perturbation(3, mock_metadata[0], 'down', numeric_displacement=100)
+    assert decreased_value == -5
+
+def test_calculate_perturbation_numerical():
+    def explainer(instance):
+        return [x * 2 for x in instance]
+    max_explanation_difference, result = _calculate_perturbation_numerical([3, 5], mock_metadata[0], explainer, [1, 2])
+    assert result == 3.1
