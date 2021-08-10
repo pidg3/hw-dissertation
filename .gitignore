@@ -2,3 +2,8 @@ marabou.log
 .ipynb_checkpoints
 __pycache__
 local/
+.coverage
+.pytest_cache
+exrt.egg-info
+build/
+dist/
