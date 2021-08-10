@@ -137,4 +137,105 @@ Methods are also provided to help get useful data from the metadata object.
 
 ## Full example
 
-TODO...
+TODO: perhaps worth changing this to a binary classification for simplicity? 
+
+Let's say want to use sklearn to train an MLP model on the simple Iris dataset. We would then like to use [SHAP](https://github.com/slundberg/shap) to obtain explanations for that model, and use this package to analyse the robustness of those explanations. 
+
+Conveniently, SHAP has a number of built-in datasets, including Iris. Get this data and split into the usual test/train datasets: 
+
+```
+import sklearn
+from sklearn.model_selection import train_test_split
+from sklearn.neural_network import MLPClassifier
+import numpy as np
+from exrt.infidelity import calculate_infidelity
+from exrt.sensitivity import calculate_sensitivity
+
+X_train,X_test,Y_train,Y_test = train_test_split(*shap.datasets.iris(), test_size=0.2, random_state=0)
+```
+
+We need to define our metadata. This is simple for Iris as all features are numerical. Use the metadata helper methods to make this a bit easier: 
+
+```
+iris_metadata = [
+    {
+        'name': 'sepal length (cm)',
+        'type': 'numerical',
+        'used': True
+    },
+    {
+        'name': 'sepal width (cm)',
+        'type': 'numerical',
+        'used': True
+    },
+    {
+        'name': 'petal length (cm)',
+        'type': 'numerical',
+        'used': True
+    },
+    {
+        'name': 'petal width (cm)',
+        'type': 'numerical',
+        'used': True
+    }
+]
+
+iris_metadata = append_indices(iris_metadata)
+iris_metadata = append_baselines(iris_metadata, X_train)
+
+# Result:
+# iris_metadata = [
+#    {
+#        'name': 'sepal length (cm)',
+#        'type': 'numerical',
+#        'used': True,
+#        'baseline': 5.880833333333333,
+#        'index': 0
+#    },
+# ...
+
+```
+
+Train the classifier, noting this provides us with a `predict()` method as required by the metrics:
+
+```
+nn = MLPClassifier(solver='lbfgs', alpha=1e-1, hidden_layer_sizes=(5, 2), random_state=0)
+nn.fit(X_train, Y_train)
+print(nn.predict)
+```
+
+Use SHAP to obtain an explanation of the first test instance. As Iris is a multi-class classification problem, SHAP returns three different explanations for the three different classes. We need to write a small helper to get the explantion for the predicted class. 
+
+```
+def get_predicted_class(instance, model):
+  predictions = model.predict_proba(instance)
+  highest_prediction = max(predictions[0])
+  return np.where(predictions[0] == highest_prediction)[0][0]
+        
+instance = X_test.iloc[0,:][0]
+predicted_class = get_predicted_class(instance)
+iris_explainer = shap.KernelExplainer(nn.predict_proba, X_train)
+iris_shap_values = iris_explainer.shap_values(X_test.iloc[0,:].to_numpy())[predicted_class]
+
+print(iris_shap_values)
+```
+
+We can now calculate the metrics. We need to define a 'highest_explainer' function that gives the explanation for our predicted class (again, a complication that arises due to the multi-class problem):
+
+```
+def highest_explainer(instance, explainer, predicted_class):
+  return explainer.shap_values(instance)[predicted_class]
+
+sensitivity = calculate_sensitivity(highest_explainer, iris_shap_values, instance, iris_metadata)
+
+class FidelityModel():
+    
+    def __init__(self, prediction):
+        self.prediction = prediction
+        
+    def predict(self, instance):
+        return nn.predict_proba([instance])[0][self.prediction]
+predict_wrapper = FidelityModel(predicted_class)
+
+infidelity = calculate_infidelity(iris_shap_values, predict_wrapper, instance, iris_metadata)
+```

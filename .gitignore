@@ -7,3 +7,4 @@ local/
 exrt.egg-info
 build/
 dist/
+.vscode
