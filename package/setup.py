@@ -9,7 +9,7 @@ README = (HERE / "README.md").read_text()
 # Consider licence stuff properly, need a proper separate licence file?
 setup(
     name="exrt",
-    version="0.0.2",
+    version="0.1.0",
     description="Measure robustness of machine learning explanations",
     long_description=README,
     long_description_content_type="text/markdown",
