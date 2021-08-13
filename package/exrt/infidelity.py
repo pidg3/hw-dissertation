@@ -100,11 +100,8 @@ def calculate_infidelity(
         raise ValueError("Explanation and instance should be a list or np array")
 
     # Check consistent array lengths
-    metadata_used_only = [feat for feat in metadata if feat["used"] == True]
-    if len(explanation) != len(instance) or len(explanation) != len(metadata_used_only):
-        raise ValueError(
-            "Explanation, instance and metadata (used features) must be equal lengths"
-        )
+    if len(explanation) != len(instance):
+        raise ValueError("Explanation and instance must be equal lengths")
 
     # Check model has predict method, and can handle instance withour erroring
     _predict_returns_correct_format(instance, model)

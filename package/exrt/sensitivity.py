@@ -197,6 +197,10 @@ def calculate_sensitivity(
     # Check explainer is callable, and can handle instance withour erroring
     _explainer_returns_correct_format(explainer, instance)
 
+    # Check consistent array lengths
+    if len(original_explanation) != len(instance):
+        raise ValueError("Explanation and instance must be equal lengths")
+
     # Check metadata has all required fields
     for feat in metadata:
         if feat["used"] == True:

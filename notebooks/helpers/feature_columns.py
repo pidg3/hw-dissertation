@@ -1,7 +1,5 @@
 import tensorflow as tf
 
-print('Feature columns module imported')
-
 def _make_zscaler(mean, std):
   def zscaler(col):
       return (col - mean)/std

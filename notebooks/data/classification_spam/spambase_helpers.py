@@ -61,7 +61,8 @@ def _generate_single_item(name):
     if name == 'class':
       return {
           'name': 'class',
-          'type': 'outcome'
+          'type': 'outcome',
+          'used': False
       }
     elif 'freq' in name:
       return {

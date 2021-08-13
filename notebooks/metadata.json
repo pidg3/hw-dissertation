@@ -175,12 +175,14 @@
       "unknown",
       "failure",
       "nonexistent",
-      "success"
+      "success",
+      "other"
     ],
     "used":true
   },
   {
     "name":"y_binary",
-    "type":"outcome"
+    "type":"outcome",
+    "used": false
   }
 ]

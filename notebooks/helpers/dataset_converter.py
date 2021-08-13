@@ -1,7 +1,5 @@
 import tensorflow as tf
 
-print('Dataset converter module imported')
-
 # A utility method to create a tf.data dataset from a Pandas Dataframe
 # From: https://www.tensorflow.org/tutorials/structured_data/feature_columns
 def convert_df_dataset(dataframe, y_label, shuffle=True, batch_size=100):
