@@ -52,7 +52,9 @@ def _get_top_explanation_values(explanation, num_baselined_features):
     return sorted_explanations[0:num_baselined_features]
 
 
-def _calculate_perturbations(instance_original, instance_perturbed, metadata):
+def _calculate_perturbations(
+    instance_original, instance_perturbed, metadata, input_normalised=False
+):
     perturbations = []
 
     for index, (original_value, perturbed_value) in enumerate(
@@ -62,11 +64,13 @@ def _calculate_perturbations(instance_original, instance_perturbed, metadata):
         feat_type = metadata[index]["type"]
         perturbation = 0
 
-        # Numeric - relative change, normalised by baseline
+        # Numeric - relative change, normalised by baseline if required
         if feat_type == "numerical":
-            perturbation = abs(
-                (original_value - perturbed_value) / metadata[index]["baseline"]
-            )
+            if input_normalised is True:
+                normaliser_value = 1
+            else:
+                normaliser_value = metadata[index]["baseline"]
+            perturbation = abs((original_value - perturbed_value) / normaliser_value)
 
         # Ordinal - difference in position, divided by total number of possible values for the feature
         elif feat_type == "ordinal" or feat_type == "nominal":
@@ -81,7 +85,12 @@ def _calculate_perturbations(instance_original, instance_perturbed, metadata):
 
 
 def calculate_infidelity(
-    explanation, model, instance, metadata, num_baselined_features=2
+    explanation,
+    model,
+    instance,
+    metadata,
+    num_baselined_features=2,
+    input_normalised=False,
 ):
     """
     calculate_infidelity calculates a single numeric value for an explanation's infidelity with respect to some model
@@ -93,6 +102,7 @@ def calculate_infidelity(
     :param instance: an array of numbers representing the input instance
     :param metadata: metadata dictionary in standard format
     :param num_baselined_features: how many features to set to their baseline value before measuring model output
+    :param input_normalised: whether input has already been normalised, e.g. by scikit Standard Scaler
     """
 
     # Check inputs array-like
@@ -145,7 +155,7 @@ def calculate_infidelity(
 
         # Calculate the array of resulting perturbations
         perturbations = _calculate_perturbations(
-            instance_original, instance_perturbed, metadata_copy
+            instance_original, instance_perturbed, metadata_copy, input_normalised
         )
 
         # Apply the formula to calculate infidelity

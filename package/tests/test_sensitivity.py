@@ -129,4 +129,4 @@ def test_calculate_perturbation_numerical():
     max_explanation_difference, result = _calculate_perturbation_numerical(
         [3, 5], mock_metadata[0], explainer, [1, 2]
     )
-    assert result == 3.1
+    assert result == 3

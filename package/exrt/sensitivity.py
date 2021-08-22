@@ -18,16 +18,21 @@ def _explainer_returns_correct_format(explainer, instance):
 
 
 def _generate_perturbation(
-    value, feature_metadata, direction, numeric_displacement=0.1
+    value, feature_metadata, direction, numeric_displacement=0.1, input_normalised=False
 ):
+
+    if input_normalised is True:
+        displacement = (value * numeric_displacement) + numeric_displacement
+    else:
+        displacement = numeric_displacement * feature_metadata["baseline"]
 
     # If increasing
     if direction == "up":
-        new_value = value + numeric_displacement * feature_metadata["baseline"]
+        new_value = value + displacement
 
     # If decreasing
     else:
-        new_value = value - numeric_displacement * feature_metadata["baseline"]
+        new_value = value - displacement
 
     # Check no higher/lower than max/min values
     if "max" in feature_metadata:
@@ -43,6 +48,7 @@ def _calculate_perturbation_numerical(
     explainer,
     original_explanation,
     numeric_displacement=0.1,
+    input_normalised=False,
 ):
 
     feature_index = feature_metadata["index"]
@@ -52,7 +58,7 @@ def _calculate_perturbation_numerical(
 
     positive_copy = instance.copy()
     positive_perturbed_value = _generate_perturbation(
-        positive_copy[feature_index], feature_metadata, "up"
+        positive_copy[feature_index], feature_metadata, "up", input_normalised
     )
     positive_copy[feature_index] = positive_perturbed_value
     positive_explanation = explainer(positive_copy)
@@ -62,7 +68,7 @@ def _calculate_perturbation_numerical(
 
     negative_copy = instance.copy()
     negative_perturbed_value = _generate_perturbation(
-        negative_copy[feature_index], feature_metadata, "down"
+        negative_copy[feature_index], feature_metadata, "down", input_normalised
     )
     negative_copy[feature_index] = negative_perturbed_value
     negative_explanation = explainer(negative_copy)
@@ -174,6 +180,7 @@ def calculate_sensitivity(
     numeric_displacement=0.1,
     proportion_features_perturbed=0.1,
     skip_zero_saliency_features=False,
+    input_normalised=False,
 ):
     """
     calculate_sensitivity calculates a single numeric value for an explanation's sensitivity, without respect to the underlying model
@@ -186,6 +193,7 @@ def calculate_sensitivity(
     :param proportion_features_perturbed: how many features (in percentage terms, rounded up) to perturb
     :param skip_zero_saliency_features: whether to skip perturbing features with zero saliency value (i.e. we assume
       not important to the calculation)
+    :param input_normalised: whether input has already been normalised, e.g. by scikit Standard Scaler
     """
 
     # Check inputs array-like
@@ -245,7 +253,11 @@ def calculate_sensitivity(
                         perturbation_difference,
                         perturbation_value,
                     ) = _calculate_perturbation_numerical(
-                        instance_copy, feature, explainer, original_explanation
+                        instance_copy,
+                        feature,
+                        explainer,
+                        original_explanation,
+                        input_normalised,
                     )
 
                 elif feature["type"] == "ordinal":
@@ -267,7 +279,7 @@ def calculate_sensitivity(
                 else:
                     print("Error - not a recognised type")
 
-                if perturbation_difference > max_difference:
+                if perturbation_difference >= max_difference:
                     max_difference = perturbation_difference
                     optimal_feature_index = feature["index"]
                     new_value = perturbation_value

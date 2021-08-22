@@ -80,38 +80,20 @@ def test_bad_metadata():
     assert str(exception.value) == "Bad metadata - indexes not defined"
 
 
-def test_bad_inconsistent_num_features():
+def test_inconsistent_num_features():
     explanation_one_feature = [1]
     with pytest.raises(ValueError) as exception:
         calculate_infidelity(
             explanation_one_feature, mock_model, mock_instance, mock_metadata
         )
-    assert (
-        str(exception.value)
-        == "Explanation, instance and metadata (used features) must be equal lengths"
-    )
+    assert str(exception.value) == "Explanation and instance must be equal lengths"
 
     instance_one_feature = [1]
     with pytest.raises(ValueError) as exception:
         calculate_infidelity(
             mock_explanation, mock_model, instance_one_feature, mock_metadata
         )
-    assert (
-        str(exception.value)
-        == "Explanation, instance and metadata (used features) must be equal lengths"
-    )
-
-    metadata_one_feature = [
-        {"name": "x1", "type": "numerical", "used": True, "index": 0, "baseline": 1}
-    ]
-    with pytest.raises(ValueError) as exception:
-        calculate_infidelity(
-            mock_explanation, mock_model, mock_instance, metadata_one_feature
-        )
-    assert (
-        str(exception.value)
-        == "Explanation, instance and metadata (used features) must be equal lengths"
-    )
+    assert str(exception.value) == "Explanation and instance must be equal lengths"
 
 
 # =========== Helper methods ===========
